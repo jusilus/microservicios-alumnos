@@ -1,6 +1,7 @@
 package com.formacionbdi.microservicios.app.alumnos.controllers;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import javax.validation.Valid;
@@ -27,6 +28,22 @@ import com.formacionbdi.microservicios.commons.controllers.CommonController;
 @RestController //Marca esta clase como un controlador del tipo Rest para manejar un API restful. Por defecto JSON, aunque permite XML.
 public class AlumnoController extends CommonController<Alumno, AlumnoService> {
 	
+	/* MÉTODOS GET */
+	
+	@GetMapping("/alumnos-por-curso")
+	public ResponseEntity<?> buscarAlumnosPorCurso(@RequestParam List<Long> ids){
+		List<Alumno> alumnos = null;
+		if(ids != null) {
+			alumnos = (List<Alumno>) this.commonService.findAllById(ids);
+		}
+		return ResponseEntity.ok(alumnos);
+	}	
+	
+	@GetMapping("/filtrar/{term}")
+	public ResponseEntity<?> buscarPorNombreOApellido(@PathVariable String term){		
+		return ResponseEntity.ok(commonService.findByNombreOrApellido(term));		
+	}
+	
 	@GetMapping("/uploads/img/{id}")
 	public ResponseEntity<?> verFoto(@PathVariable Long id){
 		Optional<Alumno> o = this.commonService.findById(id);
@@ -36,6 +53,18 @@ public class AlumnoController extends CommonController<Alumno, AlumnoService> {
 		Resource imagen = new ByteArrayResource(o.get().getFoto());
 		return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(imagen);		
 	}
+	
+	/* MÉTODOS POST */
+	
+	@PostMapping("/crear-con-foto")
+	public ResponseEntity<?> agregarConFoto(@Valid Alumno alumno, BindingResult result, @RequestParam MultipartFile archivo) throws IOException {
+		if(!archivo.isEmpty()) {
+			alumno.setFoto(archivo.getBytes());
+		}
+		return super.agregar(alumno, result);
+	}
+	
+	/* MÉTODOS PUT */
 
 	@PutMapping("/{id}") //Recibe información del cliente. Permite agregar dicha información para modificar un registro.
 	//@RequestBody recoge los datos del JSON y los convierte al tipo Alumno
@@ -55,19 +84,6 @@ public class AlumnoController extends CommonController<Alumno, AlumnoService> {
 		alumnoDb.setApellido(alumno.getApellido());
 		alumnoDb.setEmail(alumno.getEmail());		
 		return ResponseEntity.status(HttpStatus.CREATED).body(commonService.save(alumnoDb));
-	}
-
-	@GetMapping("/filtrar/{term}")
-	public ResponseEntity<?> buscarPorNombreOApellido(@PathVariable String term){		
-		return ResponseEntity.ok(commonService.findByNombreOrApellido(term));		
-	}
-	
-	@PostMapping("/crear-con-foto")
-	public ResponseEntity<?> agregarConFoto(@Valid Alumno alumno, BindingResult result, @RequestParam MultipartFile archivo) throws IOException {
-		if(!archivo.isEmpty()) {
-			alumno.setFoto(archivo.getBytes());
-		}
-		return super.agregar(alumno, result);
 	}
 
 	@PutMapping("/modificar-con-foto/{id}")
